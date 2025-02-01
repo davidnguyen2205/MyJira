@@ -1,4 +1,4 @@
-# frozen_string_literal:true
+# frozen_string_literal: true
 
 #-- copyright
 # OpenProject is an open source project management software.
@@ -29,32 +29,12 @@
 #++
 
 module Storages
-  module Peripherals
-    module StorageInteraction
-      module AuthenticationStrategies
-        module Failures
-          Builder = ->(code:, log_message:, data:) do
-            storage_error = StorageError.new(code:, log_message:, data:)
-            ServiceResult.failure(result: code, errors: storage_error)
-          end
-
-          ErrorData = ->(response:, source:) do
-            payload =
-              case response
-              in { content_type: { mime_type: "application/json" } }
-                response.json
-              in { content_type: { mime_type: "text/xml" } }
-                response.xml
-              else
-                response.body.to_s
-              end
-
-            StorageErrorData.new(source:, payload:)
-          end
-
-          TimeoutErrorData = ->(error:, source:) do
-            StorageErrorData.new(source:, payload: error.to_s)
-          end
+  module Adapters
+    module Input
+      class OpenFileLinkContract < Dry::Validation::Contract
+        params do
+          required(:file_id).filled(:string)
+          required(:open_location).filled(:bool)
         end
       end
     end

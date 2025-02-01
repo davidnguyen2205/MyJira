@@ -29,14 +29,14 @@
 #++
 
 module Storages
-  module Peripherals
-    module StorageInteraction
-      module Inputs
-        class UploadDataContract < Dry::Validation::Contract
-          params do
-            required(:folder_id).filled(:string)
-            required(:file_name).filled(:string)
-          end
+  module Adapters
+    module Input
+      # FIXME: Should FileIDs become a Array(Location)?
+      FilesInfo = Data.define(:file_ids) do
+        private_class_method :new
+
+        def self.build(file_ids:, contract: FilesInfoContract.new)
+          contract.call(file_ids:).to_monad.fmap { |it| new(**it.to_h) }
         end
       end
     end

@@ -28,45 +28,46 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-require "net/http"
-require "uri"
+module Storages
+  module Storages
+    class BaseContract < ::BaseContract
+      attribute :name
+      validates :name, presence: true, length: { maximum: 255 }
 
-# Purpose: common functionalities shared by CreateContract and UpdateContract
-# UpdateService by default checks if UpdateContract exists
-# and uses the contract to validate the model under consideration
-# (normally it's a model).
-module Storages::Storages
-  class BaseContract < ::BaseContract
-    include ::Storages::Storages::Concerns::ManageStoragesGuarded
+      attribute :provider_type
+      validates :provider_type, inclusion: { in: Storage::PROVIDER_TYPES }, allow_nil: false
 
-    attribute :name
-    validates :name, presence: true, length: { maximum: 255 }
+      attribute :provider_fields
 
-    attribute :provider_type
-    validates :provider_type, inclusion: { in: Storages::Storage::PROVIDER_TYPES }, allow_nil: false
+      validate :provider_type_strategy,
+               unless: -> { errors.include?(:provider_type) || @options.delete(:skip_provider_type_strategy) }
 
-    attribute :provider_fields
+      validate :validate_user_allowed_to_manage
 
-    validate :provider_type_strategy,
-             unless: -> { errors.include?(:provider_type) || @options.delete(:skip_provider_type_strategy) }
+      private
 
-    private
+      # Small procedure to check that the current user is admin and active
+      def validate_user_allowed_to_manage
+        unless user.admin? && user.active?
+          errors.add :base, :error_unauthorized
+        end
+      end
 
-    def provider_type_strategy
-      contract = ::Storages::Peripherals::Registry.resolve("#{model.short_provider_type}.contracts.storage")
-                                                  .new(model, @user, options: @options)
+      def provider_type_strategy
+        contract = Adapters::Registry.resolve("#{model}.contracts.storage").new(model, @user, options: @options)
 
-      # Append the attributes defined in the internal contract
-      # to the list of writable attributes.
-      # Otherwise, we get :readonly validation errors.
-      contract.writable_attributes.append(*writable_attributes)
+        # Append the attributes defined in the internal contract
+        # to the list of writable attributes.
+        # Otherwise, we get :readonly validation errors.
+        contract.writable_attributes.append(*writable_attributes)
 
       validate_and_merge_errors(contract)
     end
 
-    def require_ee_token_for_one_drive
-      if ::Storages::Storage.one_drive_without_ee_token?(provider_type)
-        errors.add(:base, I18n.t("api_v3.errors.code_500_missing_enterprise_token"))
+      def require_ee_token_for_one_drive
+        if Storage.one_drive_without_ee_token?(provider_type)
+          errors.add(:base, I18n.t("api_v3.errors.code_500_missing_enterprise_token"))
+        end
       end
     end
   end

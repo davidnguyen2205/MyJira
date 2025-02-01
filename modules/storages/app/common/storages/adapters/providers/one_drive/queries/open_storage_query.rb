@@ -29,24 +29,42 @@
 #++
 
 module Storages
-  module Peripherals
-    module ManagedFolderIdentifier
-      class Nextcloud
-        def initialize(project_storage)
-          @storage = project_storage.storage
-          @project = project_storage.project
-        end
+  module Adapters
+    module Providers
+      module OneDrive
+        module Queries
+          class OpenStorageQuery < Base
+            def call(auth_strategy:, **)
+              Authentication[auth_strategy].call(storage: @storage) do |http|
+                request_drive(http).fmap { it[:webUrl] }
+              end
+            end
 
-        def name
-          "#{@project.name.tr('/', '|')} (#{@project.id})"
-        end
+            private
 
-        def path
-          "/#{@storage.group_folder}/#{name}/"
-        end
+            def request_drive(http)
+              handle_responses http.get(request_url)
+            end
 
-        def location
-          path
+            def handle_responses(response)
+              error = Results::Error.new(source: self.class, payload: @storage)
+
+              case response
+              in { status: 200..299 }
+                Success(response.json(symbolize_keys: true))
+              in { status: 404 }
+                Failure(error.with(code: :not_found))
+              in { status: 403 }
+                Failure(error.with(code: :forbidden))
+              in { status: 401 }
+                Failure(error.with(code: :unauthorized))
+              else
+                Failure(error.with(code: :error))
+              end
+            end
+
+            def request_url = "#{base_uri}?$select=webUrl"
+          end
         end
       end
     end

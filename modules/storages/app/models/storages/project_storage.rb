@@ -82,20 +82,16 @@ module Storages
     end
 
     def open(user)
-      auth_strategy = Peripherals::StorageInteraction::AuthenticationStrategies::OAuthUserToken
-                        .strategy
-                        .with_user(user)
+      auth_strategy = Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user)
 
-      # FIXME: Those aren't real queries. They are at most services at worst something else - 2025-01-15 @mereghost
-      if project_folder_not_accessible?(user)
-        Peripherals::Registry
-          .resolve("#{storage}.queries.open_storage")
-          .call(storage:, auth_strategy:)
-      else
-        Peripherals::Registry
-          .resolve("#{storage}.queries.open_file_link")
-          .call(storage:, auth_strategy:, file_id: project_folder_id)
-      end
+      result = if project_folder_not_accessible?(user)
+                 open_storage_url(auth_strategy)
+               else
+                 open_file_link_url(auth_strategy)
+               end
+
+      result.either(->(success) { ServiceResult.success(result: success) },
+                    ->(failure) { ServiceResult.failure(errors: failure) })
     end
 
     def open_with_connection_ensured
@@ -117,9 +113,18 @@ module Storages
 
     private
 
+    def open_storage_url(auth_strategy)
+      Adapters::Registry.resolve("#{storage}.queries.open_storage").call(storage:, auth_strategy:, input_data: nil)
+    end
+
+    def open_file_link_url(auth_strategy)
+      Adapters::Input::OpenFileLink.build(file_id: project_folder_id).bind do |input_data|
+        Adapters::Registry.resolve("#{storage}.queries.open_file_link").call(storage:, auth_strategy:, input_data:)
+      end
+    end
+
     def managed_folder_identifier
-      @managed_folder_identifier ||=
-        Peripherals::Registry.resolve("#{storage}.models.managed_folder_identifier").new(self)
+      @managed_folder_identifier ||= Adapters::Registry.resolve("#{storage}.models.managed_folder_identifier").new(self)
     end
 
     def project_folder_not_accessible?(user)

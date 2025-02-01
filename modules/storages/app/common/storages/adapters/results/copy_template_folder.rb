@@ -29,29 +29,10 @@
 #++
 
 module Storages
-  module Peripherals
-    module StorageInteraction
-      module AuthenticationStrategies
-        class Strategy
-          attr_reader :key, :user, :use_cache
-
-          def initialize(key)
-            @key = key
-            # per default authorization strategies are using the cache
-            # to reduce the number authentication requests
-            @use_cache = true
-          end
-
-          def with_user(user)
-            @user = user
-            self
-          end
-
-          def with_cache(use_cache)
-            @use_cache = use_cache
-            self
-          end
-        end
+  module Adapters
+    module Results
+      CopyTemplateFolder = Data.define(:id, :polling_url, :requires_polling) do
+        def requires_polling? = !!requires_polling
       end
     end
   end

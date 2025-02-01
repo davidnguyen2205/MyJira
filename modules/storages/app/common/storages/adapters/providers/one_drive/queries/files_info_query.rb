@@ -1,4 +1,4 @@
-# frozen_string_literal:true
+# frozen_string_literal: true
 
 #-- copyright
 # OpenProject is an open source project management software.
@@ -29,18 +29,38 @@
 #++
 
 module Storages
-  module Peripherals
-    module StorageInteraction
-      module AuthenticationStrategies
-        module OneDriveStrategies
-          UserLess = -> do
-            ::Storages::Peripherals::StorageInteraction::AuthenticationStrategies::OAuthClientCredentials.strategy
-          end
+  module Adapters
+    module Providers
+      module OneDrive
+        module Queries
+          class FilesInfoQuery < Base
+            def call(auth_strategy:, input_data:)
+              with_tagged_logger do
+                info "Retrieving file information for #{input_data.file_ids.join(', ')}"
 
-          UserBound = ->(user:, storage:) do # rubocop:disable Lint/UnusedBlockArgument
-            ::Storages::Peripherals::StorageInteraction::AuthenticationStrategies::OAuthUserToken
-              .strategy
-              .with_user(user)
+                infos = input_data.file_ids.map do |file_id|
+                  Input::FileInfo.build(file_id:).bind do |file_data|
+                    FileInfoQuery.call(storage: @storage, auth_strategy:, input_data: file_data).value_or do |failure|
+                      return failure if failure.source.module_parent == Authentication
+
+                      wrap_storage_file_error(input_data.file_id, failure)
+                    end
+                  end
+                end
+
+                Success(infos)
+              end
+            end
+
+            private
+
+            def wrap_storage_file_error(file_id, query_result)
+              Results::StorageFileInfo.new(
+                id: file_id,
+                status: query_result.code,
+                status_code: Rack::Utils::SYMBOL_TO_STATUS_CODE[query_result.code] || 500
+              )
+            end
           end
         end
       end

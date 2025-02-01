@@ -1,4 +1,4 @@
-# frozen_string_literal:true
+# frozen_string_literal: true
 
 #-- copyright
 # OpenProject is an open source project management software.
@@ -29,14 +29,16 @@
 #++
 
 module Storages
-  module Peripherals
-    module StorageInteraction
-      module AuthenticationStrategies
-        module NextcloudStrategies
-          UserLess = -> do
-            ::Storages::Peripherals::StorageInteraction::AuthenticationStrategies::BasicAuth.strategy
+  module Adapters
+    module Providers
+      module Nextcloud
+        class ManagedFolderIdentifier
+          def initialize(project_storage)
+            @storage = project_storage.storage
+            @project = project_storage.project
           end
 
+<<<<<<< HEAD:modules/storages/app/common/storages/peripherals/storage_interaction/authentication_strategies/nextcloud_strategies.rb
           class UserBound
             class << self
               include TaggedLogging
@@ -66,6 +68,18 @@ module Storages
                 user.authentication_provider.is_a?(OpenIDConnect::Provider)
               end
             end
+=======
+          def name
+            "#{@project.name.tr('/', '|')} (#{@project.id})"
+          end
+
+          def path
+            "/#{@storage.group_folder}/#{name}/"
+          end
+
+          def location
+            path
+>>>>>>> 9dd5c60e7ec (Disable Peripherals::Registry):modules/storages/app/common/storages/adapters/providers/nextcloud/managed_folder_identifier.rb
           end
         end
       end

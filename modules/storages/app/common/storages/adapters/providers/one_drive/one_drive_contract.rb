@@ -1,4 +1,4 @@
-# frozen_string_literal:true
+# frozen_string_literal: true
 
 #-- copyright
 # OpenProject is an open source project management software.
@@ -29,20 +29,19 @@
 #++
 
 module Storages
-  module Peripherals
-    module StorageInteraction
-      module AuthenticationStrategies
-        class Noop
-          def self.strategy
-            Strategy.new(:noop)
-          end
-
-          # rubocop:disable Lint/UnusedMethodArgument
-          def call(storage:, http_options: {})
-            yield OpenProject.httpx.with(http_options)
-          end
-
-          # rubocop:enable Lint/UnusedMethodArgument
+  module Adapters
+    module Providers
+      module OneDrive
+        class OneDriveContract < ::ModelContract
+          attribute :host
+          validates :host, absence: true
+          attribute :tenant_id
+          validates :tenant_id,
+                    format: { with: /\A(?:[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}|consumers)\z/i }
+          attribute :drive_id
+          # GRAPH API considers drive ids of 16 characters or shorter as personal drive ids. Those are not supported,
+          # and allowing them lead to unexpected behavior.
+          validates :drive_id, presence: true, allow_nil: true, length: { minimum: 17 }
         end
       end
     end

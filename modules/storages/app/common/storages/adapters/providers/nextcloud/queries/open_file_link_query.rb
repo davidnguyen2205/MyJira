@@ -29,16 +29,16 @@
 #++
 
 module Storages
-  module Peripherals
-    module StorageInteraction
-      module Inputs
-        UploadData = Data.define(:folder_id, :file_name) do
-          private_class_method :new
-
-          def self.build(folder_id:, file_name:, contract: UploadDataContract.new)
-            contract.call(folder_id:, file_name:)
-                    .to_monad
-                    .fmap { |result| new(file_name: result[:file_name], folder_id: result[:folder_id]) }
+  module Adapters
+    module Providers
+      module Nextcloud
+        module Queries
+          class OpenFileLinkQuery < Base
+            def call(input_data:, **)
+              location_flag = input_data.open_location ? 0 : 1
+              url = UrlBuilder.url(@storage.uri, "index.php/f/#{input_data.file_id}") + "?openfile=#{location_flag}"
+              Success(url)
+            end
           end
         end
       end

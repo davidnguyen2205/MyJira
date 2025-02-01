@@ -28,17 +28,19 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-module Storages::Storages
-  class CreateContract < ::Storages::Storages::BaseContract
-    attribute :creator
-    validate :creator_must_be_user
-    validate :require_ee_token_for_one_drive
+module Storages
+  module Storages
+    class CreateContract < BaseContract
+      attribute :creator
+      validate :creator_must_be_user
+      validate :require_ee_token_for_one_drive
 
-    private
+      private
 
-    def creator_must_be_user
-      unless creator == user
-        errors.add(:creator, :invalid)
+      def creator_must_be_user
+        unless creator == user
+          errors.add(:creator, :invalid)
+        end
       end
     end
   end

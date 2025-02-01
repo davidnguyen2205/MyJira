@@ -28,26 +28,37 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
+require "spec_helper"
+require_module_spec_helper
+
 module Storages
-  module Peripherals
-    module StorageInteraction
-      module Inputs
-        class SetPermissionsContract < Dry::Validation::Contract
-          params do
-            required(:file_id).filled(:string)
-            required(:user_permissions).array(:hash) do
-              optional(:user_id).filled(:string)
-              optional(:group_id).filled(:string)
-              required(:permissions)
-                .array(:symbol, included_in?: OpenProject::Storages::Engine.external_file_permissions)
+  module Adapters
+    module Providers
+      module Nextcloud
+        module Queries
+          RSpec.describe OpenStorageQuery do
+            let(:storage) { create(:nextcloud_storage, host: "https://example.com") }
+
+            it "responds to .call" do
+              expect(described_class).to respond_to(:call)
+
+              method = described_class.method(:call)
+              expect(method.parameters).to contain_exactly(%i[keyreq storage], %i[keyreq auth_strategy], %i[keyreq input_data])
             end
-          end
 
-          rule(:user_permissions).each do
-            both = value.key?(:user_id) && value.key?(:group_id)
-            none = !value.key?(:user_id) && !value.key?(:group_id)
+            it "returns the url for opening the file on storage" do
+              url = described_class.call(storage:, auth_strategy: nil, input_data: nil).value!
+              expect(url).to eq("#{storage.host}/index.php/apps/files")
+            end
 
-            key.failure("must have either user_id or group_id") if both || none
+            context "with a storage with host url with a sub path" do
+              let(:storage) { create(:nextcloud_storage, host: "https://example.com/html") }
+
+              it "returns the url for opening the file on storage" do
+                url = described_class.call(storage:, auth_strategy: nil, input_data: nil).value!
+                expect(url).to eq("#{storage.host}/index.php/apps/files")
+              end
+            end
           end
         end
       end

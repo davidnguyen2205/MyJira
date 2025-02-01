@@ -29,11 +29,15 @@
 #++
 
 module Storages
-  module Peripherals
-    module StorageInteraction
-      module ResultData
-        CopyTemplateFolder = Data.define(:id, :polling_url, :requires_polling) do
-          def requires_polling? = !!requires_polling
+  module Adapters
+    module Providers
+      module Nextcloud
+        module Queries
+          class OpenStorageQuery < Base
+            def call(**)
+              Success(UrlBuilder.url(@storage.uri, "index.php/apps/files"))
+            end
+          end
         end
       end
     end
