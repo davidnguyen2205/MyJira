@@ -296,7 +296,7 @@ module Pages
         visible_user_auto_completer_options
       end
 
-      def apply_operator(name, human_operator)
+      def apply_operator(human_operator, name)
         select(human_operator, from: "operator") unless boolean_filter?(name)
       end
 
