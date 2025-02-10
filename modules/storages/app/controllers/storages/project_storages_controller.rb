@@ -46,13 +46,14 @@ class Storages::ProjectStoragesController < ApplicationController
       @storage = @object.storage
       # check if user "see" project_folder
       if @object.project_folder_id.present?
-        ::Storages::Peripherals::Registry
-          .resolve("#{@storage}.queries.file_info")
-          .call(storage: @storage, auth_strategy:, file_id: @object.project_folder_id)
-          .match(
-            on_success: user_can_read_project_folder,
-            on_failure: user_can_not_read_project_folder
+        Storages::Adapters::Input::FileInfo.build(file_id: @object.project_folder_id).bind do |input_data|
+          Storages::Adapters::Registry.resolve("#{@storage}.queries.file_info")
+          .call(storage: @storage, auth_strategy:, input_data:)
+          .either(
+            ->(_) { user_can_read_project_folder },
+            ->(failure) { user_can_not_read_project_folder(failure) }
           )
+        end
       else
         respond_to do |format|
           format.turbo_stream { head :no_content }
@@ -71,45 +72,39 @@ class Storages::ProjectStoragesController < ApplicationController
   private
 
   def auth_strategy
-    Storages::Peripherals::StorageInteraction::AuthenticationStrategies::OAuthUserToken
-      .strategy
-      .with_user(current_user)
+    Storages::Adapters::Registry.resolve("#{@storage}.authentication.user_bound").call(current_user)
   end
 
   def user_can_read_project_folder
-    ->(_) do
-      respond_to do |format|
-        format.turbo_stream do
-          render(
-            turbo_stream: OpTurbo::StreamComponent.new(
-              action: :update,
-              target: Storages::OpenProjectStorageModalComponent.dialog_body_id,
-              template: Storages::OpenProjectStorageModalComponent::Body.new(:success).render_in(view_context)
-            ).render_in(view_context)
-          )
-        end
-        format.html { redirect_to api_v3_project_storage_open }
+    respond_to do |format|
+      format.turbo_stream do
+        render(
+          turbo_stream: OpTurbo::StreamComponent.new(
+            action: :update,
+            target: Storages::OpenProjectStorageModalComponent.dialog_body_id,
+            template: Storages::OpenProjectStorageModalComponent::Body.new(:success).render_in(view_context)
+          ).render_in(view_context)
+        )
       end
+      format.html { redirect_to api_v3_project_storage_open }
     end
   end
 
-  def user_can_not_read_project_folder
-    ->(result) do
-      respond_to do |format|
-        format.turbo_stream { head :no_content }
-        format.html do
-          case result.code
-          when :unauthorized
-            redirect_to(
-              oauth_clients_ensure_connection_url(
-                oauth_client_id: @storage.oauth_client.client_id,
-                storage_id: @storage.id,
-                destination_url: request.url
-              )
+  def user_can_not_read_project_folder(error)
+    respond_to do |format|
+      format.turbo_stream { head :no_content }
+      format.html do
+        case error.code
+        when :unauthorized
+          redirect_to(
+            oauth_clients_ensure_connection_url(
+              oauth_client_id: @storage.oauth_client.client_id,
+              storage_id: @storage.id,
+              destination_url: request.url
             )
-          when :forbidden
-            redirect_to_project_overview_with_modal
-          end
+          )
+        when :forbidden
+          redirect_to_project_overview_with_modal
         end
       end
     end
