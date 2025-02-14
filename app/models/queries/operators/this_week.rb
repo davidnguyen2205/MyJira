@@ -33,24 +33,10 @@ module Queries::Operators
     require_value false
 
     def self.sql_for_field(_values, db_table, db_field)
-      from = begin_of_week
+      from = OpenProject::I18n::Date.time_at_beginning_of_week
       "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [
         connection.quoted_date(from), connection.quoted_date(from + 7.days)
       ]
-    end
-
-    def self.begin_of_week
-      if I18n.t(:general_first_day_of_week) == "7"
-        # week starts on sunday
-        if Time.zone.today.cwday == 7
-          Time.current.at_beginning_of_day
-        else
-          Time.current.at_beginning_of_week - 1.day
-        end
-      else
-        # week starts on monday (Rails default)
-        Time.current.at_beginning_of_week
-      end
     end
   end
 end
