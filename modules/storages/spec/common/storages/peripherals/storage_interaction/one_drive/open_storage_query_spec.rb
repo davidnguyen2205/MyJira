@@ -28,28 +28,33 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-module Storages
-  module Adapters
-    module Providers
-      module Nextcloud
-        class ManagedFolderIdentifier
-          def initialize(project_storage)
-            @storage = project_storage.storage
-            @project = project_storage.project
-          end
+require "spec_helper"
+require_module_spec_helper
 
-          def name
-            "#{@project.name.tr('/', '|')} (#{@project.id})"
-          end
+RSpec.describe Storages::Peripherals::StorageInteraction::OneDrive::OpenStorageQuery, :webmock do
+  using Storages::Peripherals::ServiceResultRefinements
 
-          def path
-            "/#{@storage.group_folder}/#{name}/"
-          end
+  let(:user) { create(:user) }
+  let(:storage) { create(:sharepoint_dev_drive_storage, oauth_client_token_user: user) }
+  let(:auth_strategy) do
+    Storages::Peripherals::StorageInteraction::AuthenticationStrategies::OAuthUserToken.strategy.with_user(user)
+  end
 
-          def location
-            path
-          end
-        end
+  subject { described_class.new(storage) }
+
+  describe "#call" do
+    it "responds with correct parameters" do
+      expect(described_class).to respond_to(:call)
+
+      method = described_class.method(:call)
+      expect(method.parameters).to contain_exactly(%i[keyreq storage], %i[keyreq auth_strategy])
+    end
+
+    context "with outbound requests successful", vcr: "one_drive/open_storage_query_success" do
+      it "returns the url for opening the storage" do
+        call = subject.call(auth_strategy:)
+        expect(call).to be_success
+        expect(call.result).to eq("https://finn.sharepoint.com/sites/openprojectfilestoragetests/VCR")
       end
     end
   end

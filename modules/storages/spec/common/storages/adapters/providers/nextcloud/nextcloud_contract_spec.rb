@@ -160,6 +160,8 @@ module Storages
             context "when the authentication method is oauth2_sso" do
               let(:authentication_method) { "oauth2_sso" }
 
+              before { storage.nextcloud_audience = "some_audience" }
+
               it { is_expected.to be_valid }
             end
 
