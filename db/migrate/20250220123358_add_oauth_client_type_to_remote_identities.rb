@@ -2,7 +2,7 @@
 
 #-- copyright
 # OpenProject is an open source project management software.
-# Copyright (C) 2012-2024 the OpenProject GmbH
+# Copyright (C) the OpenProject GmbH
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License version 3.
@@ -28,19 +28,28 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-module OpenIDConnect
-  class UserToken < ::ApplicationRecord
-    self.table_name = "oidc_user_tokens"
+class AddOAuthClientTypeToRemoteIdentities < ActiveRecord::Migration[7.1]
+  def up
+    add_column :remote_identities, :oauth_client_type, :string
+    add_column :remote_identities, :integration_type, :string
+    add_column :remote_identities, :integration_id, :bigint
 
-    IDP_AUDIENCE = "__op-idp__"
+    add_index :remote_identities, %i[oauth_client_type integration_id integration_type]
 
-    belongs_to :user
+    remove_foreign_key :remote_identities, :oauth_clients
+    execute <<~SQL.squish
+      UPDATE remote_identities SET oauth_client_type = 'OAuthClient'
+    SQL
 
-    scope :idp, -> { where(audience: IDP_AUDIENCE) }
-    scope :with_audience, ->(audience) { where("audiences ? :aud", aud: audience) }
+    # TODO fill in integration_id integration_type based on oauth_client.integration data
+    # TODO add not null constraints for new columns.
+    #
+  end
 
-    def oauth_client
-      user.authentication_provider
-    end
+  def down
+    remove_column :remote_identities, :oauth_client_type
+    remove_column :remote_identities, :integration_id
+    remove_column :remote_identities, :integration_type
+    add_foreign_key :remote_identities, :oauth_clients
   end
 end
