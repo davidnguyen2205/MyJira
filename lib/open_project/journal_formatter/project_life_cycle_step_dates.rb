@@ -28,44 +28,29 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-class OpenProject::JournalFormatter::ProjectLifeCycleStep < JournalFormatter::Base
+class OpenProject::JournalFormatter::ProjectLifeCycleStepDates < JournalFormatter::Base
   def render(key, values, options = { html: true })
     step = Project::LifeCycleStep.find(key[/\d+/])
 
     name = step.definition.name
     label = options[:html] ? content_tag(:strong, name) : name
 
-    messages = [
-      activation_message(values:),
-      date_change_message(values:, step:, options:)
-    ]
-
-    "#{label} #{messages.compact.to_sentence}"
+    "#{label} #{date_change_message(values:, step:, options:)}"
   end
 
   private
 
-  def activation_message(values:)
-    if values[:active]&.any?
-      if values[:active][1]
-        I18n.t("activity.project_life_cycle_step.activated")
-      else
-        I18n.t("activity.project_life_cycle_step.deactivated")
-      end
-    end
-  end
-
   def date_change_message(values:, step:, options:)
     case step
     when Project::Gate
-      if values[:date]
-        from, to = values[:date].map { format_date(_1) }
+      if values
+        from, to = values.map { format_date(_1&.begin) }
 
         format_date_change(from:, to:, options:)
       end
     when Project::Stage
-      if values[:date_range]
-        from, to = values[:date_range].map { format_date_range(_1) }
+      if values
+        from, to = values.map { format_date_range(_1) }
 
         format_date_change(from:, to:, options:)
       end
