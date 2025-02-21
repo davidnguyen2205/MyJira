@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # rubocop:disable Lint/PercentStringArray
 Rails.application.config.after_initialize do
   SecureHeaders::Configuration.default do |config|

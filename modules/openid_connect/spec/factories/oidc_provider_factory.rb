@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :oidc_provider, class: "OpenIDConnect::Provider" do
     display_name { "Foobar" }

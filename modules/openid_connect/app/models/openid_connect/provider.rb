@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module OpenIDConnect
   class Provider < AuthProvider
     include HashBuilder

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,7 +30,7 @@
 
 module ScheduleHelpers
   class ChartRepresenter
-    LINE = "%<id>s | %<days>s |".freeze
+    LINE = "%<id>s | %<days>s |"
 
     def self.normalized_to_s(expected_chart, actual_chart)
       normalize_ignore_non_working_days_information(expected_chart, actual_chart)
