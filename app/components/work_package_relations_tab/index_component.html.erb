@@ -61,11 +61,14 @@
               items: all_relations
             ) do |relation, visibility|
               # Render each relation with its visibility
-              render(WorkPackageRelationsTab::RelationComponent.new(
-                work_package: work_package,
-                relation: relation,
-                visibility: visibility
-              ))
+              render(
+                WorkPackageRelationsTab::RelationComponent.new(
+                  work_package: work_package,
+                  relation: relation,
+                  visibility: visibility,
+                  closest: relation_group.closest_relation?(relation)
+                )
+              )
             end
           end
         end

@@ -15,7 +15,8 @@ class WorkPackageRelationsTab::RelationComponent < ApplicationComponent
                  relation:,
                  visibility:,
                  child: nil,
-                 editable: true)
+                 editable: true,
+                 closest: false)
     super()
 
     @work_package = work_package
@@ -23,6 +24,7 @@ class WorkPackageRelationsTab::RelationComponent < ApplicationComponent
     @visibility = visibility
     @child = child
     @editable = editable
+    @closest = closest
   end
 
   def related_work_package
@@ -96,6 +98,10 @@ class WorkPackageRelationsTab::RelationComponent < ApplicationComponent
     return false if parent_child_relationship?
 
     relation.relation_type_for(work_package) == Relation::TYPE_PRECEDES
+  end
+
+  def closest?
+    @closest
   end
 
   def edit_path
