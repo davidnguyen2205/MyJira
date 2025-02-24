@@ -136,20 +136,4 @@ RSpec.describe OpenIDConnect::UserTokens::FetchService, :webmock do
       end
     end
   end
-
-  describe "#refreshed_access_token_for" do
-    subject(:result) { service.refreshed_access_token_for(audience: queried_audience) }
-
-    it { is_expected.to be_success }
-
-    it "returns the refreshed access token" do
-      expect(result.value!).to eq("access-token-refreshed")
-    end
-
-    context "when audience can't be found" do
-      let(:queried_audience) { "wrong-audience" }
-
-      it { is_expected.to be_failure }
-    end
-  end
 end
