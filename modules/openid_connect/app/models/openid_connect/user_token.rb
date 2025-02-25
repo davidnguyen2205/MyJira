@@ -39,7 +39,7 @@ module OpenIDConnect
     scope :idp, -> { where(audience: IDP_AUDIENCE) }
     scope :with_audience, ->(audience) { where("audiences ? :aud", aud: audience) }
 
-    def oauth_client
+    def auth_source
       user.authentication_provider
     end
   end

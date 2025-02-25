@@ -38,6 +38,8 @@ module OpenIDConnect
       include Dry::Monads[:result]
       include Dry::Monads::Do.for(:access_token_for, :refreshed_access_token_for)
 
+      attr_reader :user
+
       def initialize(user:,
                      jwt_parser: JwtParser.new(verify_audience: false, verify_expiration: false),
                      token_exchange: ExchangeService.new(user:),
@@ -63,6 +65,7 @@ module OpenIDConnect
         token = yield token_with_audience(audience)
         token = yield @token_refresh.call(token) if expired?(token)
 
+        # create_remote_identity(token, audience)
         Success(token.access_token)
       end
 
@@ -79,10 +82,26 @@ module OpenIDConnect
       def refreshed_access_token_for(audience:)
         token = yield token_with_audience(audience)
         token = yield @token_refresh.call(token)
+
+        # create_remote_identity(token, audience)
         Success(token.access_token)
       end
 
       private
+
+      def create_remote_identity(token, audience)
+        # 1. to decouple it should be smth like
+        # integration = token.auth_source.integrations.find { |i| i.audience == audience }
+        # 2. Should token be considered valid if remote_identity creation fails by whatever reason?
+        storage = Storages::Storage.all.find { |s| s.audience == audience }
+        if storage
+          RemoteIdentities::CreateService
+            .call(user:, integration: storage, token:)
+            .on_failure { raise "RemoteIdentity creation failed" }
+        else
+          puts "WARNING: no integration was found for audience: #{audience}"
+        end
+      end
 
       def token_with_audience(aud)
         token = @user.oidc_user_tokens.with_audience(aud).first

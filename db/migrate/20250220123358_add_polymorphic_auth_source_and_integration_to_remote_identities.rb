@@ -28,28 +28,42 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-class AddOAuthClientTypeToRemoteIdentities < ActiveRecord::Migration[7.1]
+class AddPolymorphicAuthSourceAndIntegrationToRemoteIdentities < ActiveRecord::Migration[7.1]
   def up
-    add_column :remote_identities, :oauth_client_type, :string
-    add_column :remote_identities, :integration_type, :string
-    add_column :remote_identities, :integration_id, :bigint
-
-    add_index :remote_identities, %i[oauth_client_type integration_id integration_type]
-
     remove_foreign_key :remote_identities, :oauth_clients
+
+    rename_column :remote_identities, :oauth_client_id, :auth_source_id
+    add_column :remote_identities, :auth_source_type, :string
+    add_index :remote_identities, :auth_source_type
     execute <<~SQL.squish
-      UPDATE remote_identities SET oauth_client_type = 'OAuthClient'
+      UPDATE remote_identities SET auth_source_type = 'OAuthClient'
     SQL
 
-    # TODO fill in integration_id integration_type based on oauth_client.integration data
-    # TODO add not null constraints for new columns.
-    #
+    add_column :remote_identities, :integration_type, :string
+    add_column :remote_identities, :integration_id, :bigint
+    add_index :remote_identities, :integration_id
+    add_index :remote_identities, :integration_type
+
+    execute <<~SQL.squish
+      UPDATE remote_identities
+      SET auth_source_type = 'OAuthClient',
+          integration_id = oauth_clients.integration_id,
+          integration_type = oauth_clients.integration_type
+      FROM oauth_clients
+      WHERE remote_identities.auth_source_id = oauth_clients.id;
+    SQL
+
+    change_column_null(:remote_identities, :integration_id, false)
+    change_column_null(:remote_identities, :integration_type, false)
+    change_column_null(:remote_identities, :auth_source_type, false)
   end
 
   def down
-    remove_column :remote_identities, :oauth_client_type
+    rename_column :remote_identities, :auth_source_id, :oauth_client_id
+    add_foreign_key :remote_identities, :oauth_clients
+    remove_column :remote_identities, :auth_source_type
+
     remove_column :remote_identities, :integration_id
     remove_column :remote_identities, :integration_type
-    add_foreign_key :remote_identities, :oauth_clients
   end
 end

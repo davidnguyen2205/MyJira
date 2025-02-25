@@ -68,10 +68,6 @@ module OpenIDConnect
         # refresh tokens after token exchange (see https://github.com/keycloak/keycloak/issues/37016)
         token = store_exchanged_token(audience:, access_token:, refresh_token: nil, expires_in:)
 
-        storage = Storages::Storage.all.find { |s| s.audience == audience }
-        RemoteIdentities::CreateService
-          .call(user:, integration: storage, token:)
-          .on_failure { raise "RemoteIdentity creation failed" }
         Success(token)
       end
 

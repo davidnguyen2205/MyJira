@@ -30,7 +30,7 @@
 
 class RemoteIdentity < ApplicationRecord
   belongs_to :user
-  belongs_to :oauth_client, polymorphic: true
+  belongs_to :auth_source, polymorphic: true
   belongs_to :integration, polymorphic: true
 
   validates :user, uniqueness: { scope: :oauth_client }

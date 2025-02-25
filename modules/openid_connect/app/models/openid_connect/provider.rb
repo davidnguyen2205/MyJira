@@ -4,7 +4,7 @@ module OpenIDConnect
   class Provider < AuthProvider
     include HashBuilder
 
-    has_many :remote_identities, as: :oauth_client, dependent: :destroy
+    has_many :remote_identities, as: :auth_source, dependent: :destroy
 
     OIDC_PROVIDERS = %w[google microsoft_entra custom].freeze
     DISCOVERABLE_STRING_ATTRIBUTES_MANDATORY = %i[authorization_endpoint

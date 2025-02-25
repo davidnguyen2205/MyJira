@@ -41,7 +41,7 @@ module RemoteIdentities
       @integration = integration
       @token = token
 
-      @model = RemoteIdentity.find_or_initialize_by(user:, oauth_client: token.oauth_client, integration:)
+      @model = RemoteIdentity.find_or_initialize_by(user:, auth_source: token.auth_source, integration:)
       @result = ServiceResult.success(result: @model, errors: @model.errors)
     end
 
