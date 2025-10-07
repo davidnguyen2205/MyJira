@@ -49,6 +49,12 @@ Rails.application.configure do
 
   # Enable server timing
   config.server_timing = true
+  # Allow specific hosts for local development
+  config.hosts.clear
+  # config.web_console.whitelisted_ips='0.0.0.0/0'
+  config.action_controller.forgery_protection_origin_check = false
+  config.action_dispatch.cookies_same_site_protection = :none
+  config.session_store :cookie_store, same_site: :none, secure: false
 
   # Enable/disable caching. By default caching is disabled.
   # Run rails dev:cache to toggle caching.

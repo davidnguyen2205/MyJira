@@ -60,7 +60,10 @@ class ApplicationController < ActionController::Base
 
   layout "base"
 
-  protect_from_forgery
+  skip_before_action :verify_authenticity_token, if: -> { Rails.env.development? }
+
+  protect_from_forgery with: :exception
+  include OpenProject::Authentication
   # CSRF protection prevents two things. It prevents an attacker from using a
   # user's session to execute requests. It also prevents an attacker to log in
   # a user with the attacker's account. API requests each contain their own

@@ -119,7 +119,10 @@
         "serve": {
           "builder": "@angular-builders/custom-esbuild:dev-server",
           "options": {
-            "servePath": "/assets/frontend"
+            "servePath": "/assets/frontend",
+            "host":"0.0.0.0",
+            "port": 4200,
+            "allowedHosts": ["all"]
           },
           "configurations": {
             "production": {
